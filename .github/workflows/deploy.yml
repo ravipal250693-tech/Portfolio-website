@@ -1,28 +1,29 @@
-name: CI/CD Pipeline
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -30,18 +31,21 @@ jobs:
       - name: Install EJS
         run: npm install ejs
 
-      - name: Build Static Site
+      - name: Build site
         run: node build.js
 
-      - name: Verify build output
+      - name: List output files
         run: |
-          echo "HTML files:"
+          echo "=== HTML Files ==="
           ls -la *.html
-          echo "CSS:"
+          echo "=== CSS Files ==="
           ls -la css/
+          echo "=== Checking index.html ==="
+          head -10 index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        id: pages
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -50,3 +54,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
+        id: deployment
